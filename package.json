@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "npx playwright test /tests",
-    "test:dev": "npx playwright test /tests --project=chromium --headed --retries=0",
-    "test:debug": "npx playwright test /tests --ui",
-    "test:chromium": "npx playwright test /tests --project=chromium -- restries=0"
+    "test": "npx playwright test tests",
+    "test:dev": "npx playwright test tests --project=chromium --headed --retries=0",
+    "test:debug": "npx playwright test tests --ui",
+    "test:chromium": "npx playwright test tests --project=chromium --retries=0"
   },
   "keywords": [],
   "author": "",

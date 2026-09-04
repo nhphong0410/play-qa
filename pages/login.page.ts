@@ -31,12 +31,22 @@ export class LoginPage {
     await this.page.goto(url);
   }
 
-  async login(email?: string, password?: string, rememberMe?: boolean) {
-    if (!!email) await this.emailInput.fill(email);
-    if (!!password) await this.passwordInput.fill(password);
+  async login(
+    email?: string,
+    password?: string,
+    rememberMe?: boolean,
+    enterKey?: boolean,
+  ) {
+    await this.emailInput.fill(email ?? '');
+    await this.passwordInput.fill(password ?? '');
+    
     if (!!rememberMe) await this.rememberMeCheckbox.check();
 
-    await this.loginButton.click();
-    await this.toast.waitForVisible();
+    if (enterKey) {
+      await this.passwordInput.focus();
+      await this.page.keyboard.press('Enter');
+    } else {
+      await this.loginButton.click();
+    }
   }
 }
