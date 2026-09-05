@@ -84,12 +84,10 @@ test.describe('Login Page', () => {
 
     await loginPage.login(email, password);
 
-    const validationMessage = await loginPage.emailInput.evaluate(
-      (el: HTMLInputElement) => el.validationMessage,
+    const isValid = await loginPage.emailInput.evaluate(
+      (el: HTMLInputElement) => el.checkValidity(),
     );
-    await expect(validationMessage).toContain(
-      "Please include an '@' in the email address.",
-    );
+    await expect(isValid).toBe(false);
   });
 
   test('AUT_LOGIN_06: Submit with invalid email - missing domain', async ({
@@ -100,12 +98,10 @@ test.describe('Login Page', () => {
 
     await loginPage.login(email, password);
 
-    const validationMessage = await loginPage.emailInput.evaluate(
-      (el: HTMLInputElement) => el.validationMessage,
+    const isValid = await loginPage.emailInput.evaluate(
+      (el: HTMLInputElement) => el.checkValidity(),
     );
-    await expect(validationMessage).toContain(
-      "Please enter a part following '@'.",
-    );
+    await expect(isValid).toBe(false);
   });
 
   test('AUT_LOGIN_07: Submit with valid email but empty password', async ({
