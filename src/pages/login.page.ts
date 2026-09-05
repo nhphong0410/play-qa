@@ -29,6 +29,7 @@ export class LoginPage {
 
   async goto(url: string) {
     await this.page.goto(url);
+    await this.page.waitForLoadState('networkidle');
   }
 
   async login(
