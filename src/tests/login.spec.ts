@@ -76,7 +76,39 @@ test.describe('Login Page', () => {
     await expect(loginPage.passwordErrorMessage).toBeVisible();
   });
 
-  test('AUT_LOGIN_05: Submit with valid email but empty password', async ({
+  test('AUT_LOGIN_05: Submit with invalid email - missing "@"', async ({
+    loginPage,
+  }) => {
+    const email = 'invalid-email';
+    const password = 'password123';
+
+    await loginPage.login(email, password);
+
+    const validationMessage = await loginPage.emailInput.evaluate(
+      (el: HTMLInputElement) => el.validationMessage,
+    );
+    await expect(validationMessage).toContain(
+      "Please include an '@' in the email address.",
+    );
+  });
+
+  test('AUT_LOGIN_06: Submit with invalid email - missing domain', async ({
+    loginPage,
+  }) => {
+    const email = 'invalid-email@';
+    const password = 'password123';
+
+    await loginPage.login(email, password);
+
+    const validationMessage = await loginPage.emailInput.evaluate(
+      (el: HTMLInputElement) => el.validationMessage,
+    );
+    await expect(validationMessage).toContain(
+      "Please enter a part following '@'.",
+    );
+  });
+
+  test('AUT_LOGIN_07: Submit with valid email but empty password', async ({
     loginPage,
   }) => {
     const email = 'test@example.com';
@@ -91,7 +123,7 @@ test.describe('Login Page', () => {
     await expect(loginPage.emailErrorMessage).not.toBeVisible();
   });
 
-  test('AUT_LOGIN_06: Submit with empty email and entered password', async ({
+  test('AUT_LOGIN_08: Submit with empty email and entered password', async ({
     loginPage,
   }) => {
     const email = '';
@@ -104,7 +136,7 @@ test.describe('Login Page', () => {
     await expect(loginPage.passwordErrorMessage).not.toBeVisible();
   });
 
-  test('AUT_LOGIN_07: Submit with email contain only spaces and valid password', async ({
+  test('AUT_LOGIN_09: Submit with email contain only spaces and valid password', async ({
     loginPage,
   }) => {
     const email = '   ';
@@ -117,7 +149,7 @@ test.describe('Login Page', () => {
     await expect(loginPage.passwordErrorMessage).not.toBeVisible();
   });
 
-  test('AUT_LOGIN_08: Submit with valid email and password contain only spaces', async ({
+  test('AUT_LOGIN_10: Submit with valid email and password contain only spaces', async ({
     loginPage,
   }) => {
     const email = 'test@example.com';
@@ -132,7 +164,7 @@ test.describe('Login Page', () => {
     );
   });
 
-  test('AUT_LOGIN_09: Verify password input masks characters', async ({
+  test('AUT_LOGIN_11: Verify password input masks characters', async ({
     loginPage,
   }) => {
     const passwordInputType =
@@ -140,7 +172,7 @@ test.describe('Login Page', () => {
     await expect(passwordInputType).toBe('password');
   });
 
-  test('AUT_LOGIN_10: Verify password must be at least 6 characters long', async ({
+  test('AUT_LOGIN_12: Verify password must be at least 6 characters long', async ({
     loginPage,
   }) => {
     const email = 'test@example.com';
@@ -154,7 +186,7 @@ test.describe('Login Page', () => {
     );
   });
 
-  test('AUT_LOGIN_11: Keyboard accessibility (Submit on Enter key)', async ({
+  test('AUT_LOGIN_13: Keyboard accessibility (Submit on Enter key)', async ({
     loginPage,
   }) => {
     const email = 'test@example.com';
