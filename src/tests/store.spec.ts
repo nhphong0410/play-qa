@@ -173,8 +173,6 @@ test.describe('Store Page', () => {
 
     await categoryFilter.click();
 
-    await storePage.page.waitForLoadState('networkidle');
-
     let shouldContinue = true;
     do {
       const productCards = await storePage.productCards.all();
@@ -191,7 +189,6 @@ test.describe('Store Page', () => {
       }
 
       await storePage.clickNextPage();
-      await storePage.page.waitForLoadState('networkidle');
     } while (shouldContinue);
   });
 
@@ -203,8 +200,6 @@ test.describe('Store Page', () => {
         .getByText(category, { exact: true })
         .click();
     }
-
-    await storePage.page.waitForLoadState('networkidle');
 
     let shouldContinue = true;
     do {
@@ -224,7 +219,6 @@ test.describe('Store Page', () => {
       }
 
       await storePage.clickNextPage();
-      await storePage.page.waitForLoadState('networkidle');
     } while (shouldContinue);
   });
 
@@ -232,8 +226,6 @@ test.describe('Store Page', () => {
     await storePage.filtersSidebar
       .getByText('In Stock Only', { exact: true })
       .click();
-
-    await storePage.page.waitForLoadState('networkidle');
 
     let shouldContinue = true;
     do {
@@ -252,15 +244,13 @@ test.describe('Store Page', () => {
       }
 
       await storePage.clickNextPage();
-      await storePage.page.waitForLoadState('networkidle');
     } while (shouldContinue);
   });
 
   test('@smoke AUT_FLT_04: Filter by price range', async ({ storePage }) => {
     const targetPrice = 100;
 
-    storePage.setSliderValueViaKeyboard(targetPrice);
-    await storePage.page.waitForLoadState('networkidle');
+    await storePage.setSliderValueViaKeyboard(targetPrice);
 
     let shouldContinue = true;
     do {
@@ -281,7 +271,6 @@ test.describe('Store Page', () => {
       }
 
       await storePage.clickNextPage();
-      await storePage.page.waitForLoadState('networkidle');
     } while (shouldContinue);
   });
 
@@ -291,7 +280,6 @@ test.describe('Store Page', () => {
     await storePage.filtersSidebar
       .getByText(targetRating, { exact: true })
       .click();
-    await storePage.page.waitForLoadState('networkidle');
 
     let shouldContinue = true;
     do {
@@ -314,7 +302,36 @@ test.describe('Store Page', () => {
       }
 
       await storePage.clickNextPage();
-      await storePage.page.waitForLoadState('networkidle');
     } while (shouldContinue);
+  });
+
+  test('AUT_FLT_06: Combined Multi-filter criteria', async ({ storePage }) => {
+    const targetCategory = 'Electronics';
+    const targetPrice = 200;
+
+    await storePage.filtersSidebar
+      .getByText(targetCategory, { exact: true })
+      .click();
+    await storePage.filtersSidebar
+      .getByText('In Stock Only', { exact: true })
+      .click();
+    await storePage.setSliderValueViaKeyboard(targetPrice);
+
+    const productCards = await storePage.productCards.all();
+    expect(productCards.length).toBeGreaterThan(0);
+
+    for (const productCard of productCards) {
+      expect(
+        (await productCard.getAttribute('data-category'))?.toLowerCase(),
+      ).toBe(targetCategory.toLocaleLowerCase());
+      await expect(
+        productCard.getByText('Out of Stock', { exact: true }),
+      ).toHaveCount(0);
+
+      const price = parseFloat(
+        (await productCard.getAttribute('data-price')) || '0',
+      );
+      expect(price).toBeGreaterThanOrEqual(targetPrice);
+    }
   });
 });

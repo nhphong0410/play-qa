@@ -181,7 +181,6 @@ export class StorePage {
   async setSliderValueViaKeyboard(targetValue: number, step: number = 10) {
     await this.priceSlider.focus();
 
-    // Read current value
     let currentValue = parseInt(
       (await this.priceSlider.getAttribute('aria-valuenow')) || '0',
       10,
