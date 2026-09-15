@@ -64,6 +64,13 @@ export class StorePage {
     this.toast = new ToastComponent(page);
   }
 
+  async hasNextpage() {
+    return (
+      (await this.nextPageButton.isVisible()) &&
+      (await this.nextPageButton.isEnabled())
+    );
+  }
+
   async goto(url: string = '/') {
     await this.page.goto(url, { waitUntil: 'load' });
   }
@@ -130,7 +137,7 @@ export class StorePage {
   async getProductDetails(title: string) {
     const card = this.getProductCardByTitle(title);
     const tags = await card.locator('.product-tag').allTextContents();
-    
+
     return {
       id: await card.getAttribute('data-product-id'),
       title: await card.locator('.product-title').textContent(),
@@ -169,5 +176,27 @@ export class StorePage {
 
   async clickPrevPage() {
     await this.prevPageButton.click();
+  }
+
+  async setSliderValueViaKeyboard(targetValue: number, step: number = 10) {
+    await this.priceSlider.focus();
+
+    // Read current value
+    let currentValue = parseInt(
+      (await this.priceSlider.getAttribute('aria-valuenow')) || '0',
+      10,
+    );
+
+    const key = targetValue > currentValue ? 'ArrowRight' : 'ArrowLeft';
+    const stepsNeeded = Math.abs(targetValue - currentValue) / step;
+
+    for (let i = 0; i < stepsNeeded; i++) {
+      await this.priceSlider.press(key);
+    }
+  }
+
+  async getCurrentSliderValue(): Promise<number> {
+    const val = await this.priceSlider.getAttribute('aria-valuenow');
+    return val ? parseInt(val, 10) : 0;
   }
 }

@@ -69,14 +69,18 @@ test.describe('Store Page', () => {
     storePage,
   }) => {
     await storePage.sortDropdown.click();
-    await storePage.page.locator('div[role="option"]', { hasText: 'Price: Low to High' }).click();
+    await storePage.page
+      .locator('div[role="option"]', { hasText: 'Price: Low to High' })
+      .click();
 
     const selectedOption = await storePage.sortDropdown.textContent();
     expect(selectedOption?.trim()).toBe('Price: Low to High');
 
     const prices = [];
     for (const productCard of await storePage.productCards.all()) {
-      const priceText = await productCard.locator('.product-price').textContent();
+      const priceText = await productCard
+        .locator('.product-price')
+        .textContent();
       const price = Number(priceText?.replace(/[^0-9.]/g, ''));
 
       expect(Number.isNaN(price)).toBe(false);
@@ -100,7 +104,9 @@ test.describe('Store Page', () => {
 
     const prices = [];
     for (const productCard of await storePage.productCards.all()) {
-      const priceText = await productCard.locator('.product-price').textContent();
+      const priceText = await productCard
+        .locator('.product-price')
+        .textContent();
       const price = Number(priceText?.replace(/[^0-9.]/g, ''));
 
       expect(Number.isNaN(price)).toBe(false);
@@ -111,9 +117,7 @@ test.describe('Store Page', () => {
     expect(prices).toEqual([...prices].sort((a, b) => b - a));
   });
 
-  test('@smoke AUT_SRT_03: Sort by highest rated', async ({
-    storePage,
-  }) => {
+  test('@smoke AUT_SRT_03: Sort by highest rated', async ({ storePage }) => {
     await storePage.sortDropdown.click();
     await storePage.page
       .locator('div[role="option"]', { hasText: 'Highest Rated' })
@@ -123,7 +127,9 @@ test.describe('Store Page', () => {
 
     const ratings: number[] = [];
     for (const productCard of await storePage.productCards.all()) {
-      const ratingText = await productCard.locator('div[data-rating]').getAttribute('data-rating');
+      const ratingText = await productCard
+        .locator('div[data-rating]')
+        .getAttribute('data-rating');
       const rating = Number(ratingText);
 
       expect(Number.isNaN(rating)).toBe(false);
@@ -154,10 +160,161 @@ test.describe('Store Page', () => {
     }
 
     expect(reviewCounts.length).toBeGreaterThan(0);
-    expect(reviewCounts).toEqual(
-      [...reviewCounts].sort((a, b) => b - a),
-    );
+    expect(reviewCounts).toEqual([...reviewCounts].sort((a, b) => b - a));
   });
 
-  
+  test('@smoke AUT_FLT_01: Filter by single category', async ({
+    storePage,
+  }) => {
+    const category = 'Electronics';
+    const categoryFilter = storePage.filtersSidebar.getByText(category, {
+      exact: true,
+    });
+
+    await categoryFilter.click();
+
+    await storePage.page.waitForLoadState('networkidle');
+
+    let shouldContinue = true;
+    do {
+      const productCards = await storePage.productCards.all();
+      expect(productCards.length).toBeGreaterThan(0);
+
+      for (const productCard of productCards) {
+        const productCategory = await productCard.getAttribute('data-category');
+        expect(productCategory?.toLowerCase()).toBe(category.toLowerCase());
+      }
+
+      if (!(await storePage.hasNextpage())) {
+        shouldContinue = false;
+        break;
+      }
+
+      await storePage.clickNextPage();
+      await storePage.page.waitForLoadState('networkidle');
+    } while (shouldContinue);
+  });
+
+  test('AUT_FLT_02: Filter by multiple categories', async ({ storePage }) => {
+    const categories = ['Electronics', 'Gaming'];
+
+    for (const category of categories) {
+      await storePage.filtersSidebar
+        .getByText(category, { exact: true })
+        .click();
+    }
+
+    await storePage.page.waitForLoadState('networkidle');
+
+    let shouldContinue = true;
+    do {
+      const productCards = await storePage.productCards.all();
+      expect(productCards.length).toBeGreaterThan(0);
+
+      for (const productCard of productCards) {
+        const productCategory = await productCard.getAttribute('data-category');
+        expect(categories.map((category) => category.toLowerCase())).toContain(
+          productCategory?.toLowerCase(),
+        );
+      }
+
+      if (!(await storePage.hasNextpage())) {
+        shouldContinue = false;
+        break;
+      }
+
+      await storePage.clickNextPage();
+      await storePage.page.waitForLoadState('networkidle');
+    } while (shouldContinue);
+  });
+
+  test('@smoke AUT_FLT_03: Filter by In Stock Only', async ({ storePage }) => {
+    await storePage.filtersSidebar
+      .getByText('In Stock Only', { exact: true })
+      .click();
+
+    await storePage.page.waitForLoadState('networkidle');
+
+    let shouldContinue = true;
+    do {
+      const productCards = await storePage.productCards.all();
+      expect(productCards.length).toBeGreaterThan(0);
+
+      for (const productCard of productCards) {
+        await expect(
+          productCard.getByText('Out of Stock', { exact: true }),
+        ).toHaveCount(0);
+      }
+
+      if (!(await storePage.hasNextpage())) {
+        shouldContinue = false;
+        break;
+      }
+
+      await storePage.clickNextPage();
+      await storePage.page.waitForLoadState('networkidle');
+    } while (shouldContinue);
+  });
+
+  test('@smoke AUT_FLT_04: Filter by price range', async ({ storePage }) => {
+    const targetPrice = 100;
+
+    storePage.setSliderValueViaKeyboard(targetPrice);
+    await storePage.page.waitForLoadState('networkidle');
+
+    let shouldContinue = true;
+    do {
+      const productCards = await storePage.productCards.all();
+      expect(productCards.length).toBeGreaterThan(0);
+
+      for (const productCard of productCards) {
+        const price = parseFloat(
+          (await productCard.getAttribute('data-price')) || '0',
+        );
+
+        expect(price).toBeGreaterThanOrEqual(100);
+      }
+
+      if (!(await storePage.hasNextpage())) {
+        shouldContinue = false;
+        break;
+      }
+
+      await storePage.clickNextPage();
+      await storePage.page.waitForLoadState('networkidle');
+    } while (shouldContinue);
+  });
+
+  test('AUT_FLT_05: Filter by rating 4+ Stars', async ({ storePage }) => {
+    const targetRating = '4+ Stars';
+
+    await storePage.filtersSidebar
+      .getByText(targetRating, { exact: true })
+      .click();
+    await storePage.page.waitForLoadState('networkidle');
+
+    let shouldContinue = true;
+    do {
+      const productCards = await storePage.productCards.all();
+      expect(productCards.length).toBeGreaterThan(0);
+
+      for (const productCard of productCards) {
+        const rating = parseFloat(
+          (await productCard
+            .locator('div[data-rating]')
+            .getAttribute('data-rating')) || '0',
+        );
+
+        expect(rating).toBeGreaterThanOrEqual(4);
+      }
+
+      if (!(await storePage.hasNextpage())) {
+        shouldContinue = false;
+        break;
+      }
+
+      await storePage.clickNextPage();
+      await storePage.page.waitForLoadState('networkidle');
+    } while (shouldContinue);
+  });
 });
