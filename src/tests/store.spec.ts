@@ -436,4 +436,63 @@ test.describe('Store Page', () => {
       );
     }
   });
+
+  test('@smoke AUT_PAG_01: Initial pagination state on Page 1', async ({
+    storePage,
+  }) => {
+    const pageOneButton = storePage.page.locator(
+      'button[data-testid="page-1"]',
+    );
+    const previousButton = storePage.page.locator(
+      'button[data-testid="prev-page"]',
+    );
+    const nextButton = storePage.page.locator(
+      'button[data-testid="next-page"]',
+    );
+
+    await expect(pageOneButton).toContainClass('bg-primary');
+    await expect(previousButton).toBeDisabled();
+    await expect(nextButton).toBeEnabled();
+  });
+
+  test('@smoke AUT_PAG_02: Navigate to next page via page number', async ({
+    storePage,
+  }) => {
+    const pageTwoButton = storePage.page.locator(
+      'button[data-testid="page-2"]',
+    );
+    const previousButton = storePage.page.locator(
+      'button[data-testid="prev-page"]',
+    );
+
+    await pageTwoButton.click();
+
+    await expect(pageTwoButton).toContainClass('bg-primary');
+    await expect(previousButton).toBeEnabled();
+  });
+
+  test('AUT_PAG_03: Reset pagination on new filter', async ({ storePage }) => {
+    const pageOneButton = storePage.page.locator(
+      'button[data-testid="page-1"]',
+    );
+    const pageTwoButton = storePage.page.locator(
+      'button[data-testid="page-2"]',
+    );
+    const previousButton = storePage.page.locator(
+      'button[data-testid="prev-page"]',
+    );
+    const nextButton = storePage.page.locator(
+      'button[data-testid="next-page"]',
+    );
+
+    await nextButton.click();
+
+    await expect(pageTwoButton).toContainClass('bg-primary');
+    await expect(previousButton).toBeEnabled();
+
+    await storePage.inStockOnlyFilter.click();
+
+    await expect(pageOneButton).toContainClass('bg-primary');
+    await expect(previousButton).toBeDisabled();
+  });
 });
