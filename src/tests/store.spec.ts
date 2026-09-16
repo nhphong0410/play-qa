@@ -334,4 +334,106 @@ test.describe('Store Page', () => {
       expect(price).toBeGreaterThanOrEqual(targetPrice);
     }
   });
+
+  test('@smoke AUT_CRD_01: Add In-Stock product to Cart from card', async ({
+    storePage,
+  }) => {
+    await storePage.inStockOnlyFilter.click();
+
+    const productCard = storePage.productCards.first();
+    const addToCartButton = productCard.getByRole('button', {
+      name: 'Add to Cart',
+      exact: true,
+    });
+
+    await expect(addToCartButton).toBeVisible();
+    await addToCartButton.click();
+
+    await expect(storePage.cartButton).toContainText('1');
+  });
+
+  test('@smoke AUT_CRD_02: Out of Stock product button behavior', async ({
+    storePage,
+  }) => {
+    let shouldContinue = true;
+    do {
+      const productCards = await storePage.productCards.all();
+
+      for (const productCard of productCards) {
+        const isOutOfStock = await productCard.getAttribute('data-in-stock');
+
+        if (isOutOfStock && isOutOfStock == 'false') {
+          const outOfStockButton = productCard.locator('button', {
+            hasText: 'Out of Stock',
+          });
+          await expect(outOfStockButton).toBeVisible();
+          await expect(outOfStockButton).toBeDisabled();
+
+          await outOfStockButton.click({ force: true });
+          shouldContinue = false;
+          break;
+        }
+      }
+
+      if (!shouldContinue || !(await storePage.hasNextpage())) {
+        shouldContinue = false;
+        break;
+      }
+
+      await storePage.clickNextPage();
+    } while (shouldContinue);
+
+    await expect(storePage.cartButton).toHaveAttribute('data-cart-count', '0');
+  });
+
+  test('@smoke AUT_CRD_03: Add product to Wishlist from card', async ({
+    storePage,
+  }) => {
+    const productCard = storePage.productCards.first();
+    const wishListButton = productCard.locator(
+      '[aria-label="Add {name} to wishlist"]',
+    );
+
+    await wishListButton.click();
+
+    await expect(storePage.wishlistButton).toHaveAttribute(
+      'data-wishlist-count',
+      '1',
+    );
+  });
+
+  test('AUT_CRD_04: Remove product from Wishlist via card', async ({
+    storePage,
+  }) => {
+    const productCard = storePage.productCards.first();
+    const wishListButton = productCard.locator(
+      '[aria-label="Add {name} to wishlist"]',
+    );
+
+    await wishListButton.click();
+    await wishListButton.click();
+
+    await expect(storePage.wishlistButton).toHaveAttribute(
+      'data-wishlist-count',
+      '0',
+    );
+  });
+
+  test('AUT_CRD_05: Product metadata display', async ({ storePage }) => {
+    const productCards = await storePage.productCards.all();
+    expect(productCards.length).toBeGreaterThan(0);
+
+    for (const productCard of productCards) {
+      await expect(productCard.locator('img')).toBeVisible();
+      await expect(productCard.locator('.product-title')).toHaveText(/\S+/);
+      await expect(productCard.locator('[data-brand]')).toHaveText(/\S+/);
+      await expect(productCard.locator('div[data-rating]')).toBeVisible();
+      await expect(
+        productCard.locator('span[data-reviews-count]'),
+      ).toHaveAttribute('data-reviews-count', /^\d+$/);
+      await expect(productCard.locator('.product-price')).toHaveText(
+        /^\$\d+\.\d{2}$/,
+      );
+    }
+  });
 });
