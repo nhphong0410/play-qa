@@ -14,7 +14,7 @@ test.describe('Store Page', () => {
     await expect(storePage.cartButton).toBeVisible();
     await expect(storePage.filtersSidebar).toBeVisible();
     await expect(storePage.resultsCountText).toBeVisible();
-    await expect(await storePage.productCards.count()).toBeGreaterThan(0);
+    await expect(await storePage.productCards).not.toHaveCount(0);
   });
 
   test('@smoke AUT_SRH_01: Search products by exact keyword', async ({
@@ -176,7 +176,7 @@ test.describe('Store Page', () => {
     let shouldContinue = true;
     do {
       const productCards = await storePage.productCards.all();
-      expect(productCards.length).toBeGreaterThan(0);
+      await expect(productCards).not.toHaveLength(0);
 
       for (const productCard of productCards) {
         const productCategory = await productCard.getAttribute('data-category');
@@ -390,9 +390,7 @@ test.describe('Store Page', () => {
     storePage,
   }) => {
     const productCard = storePage.productCards.first();
-    const wishListButton = productCard.locator(
-      '[aria-label="Add {name} to wishlist"]',
-    );
+    const wishListButton = productCard.locator('button.wishlist-btn');
 
     await wishListButton.click();
 
@@ -406,9 +404,7 @@ test.describe('Store Page', () => {
     storePage,
   }) => {
     const productCard = storePage.productCards.first();
-    const wishListButton = productCard.locator(
-      '[aria-label="Add {name} to wishlist"]',
-    );
+    const wishListButton = productCard.locator('button.wishlist-btn');
 
     await wishListButton.click();
     await wishListButton.click();
@@ -613,5 +609,186 @@ test.describe('Store Page', () => {
     await storePage.wishlistButton.click();
 
     await expect(await storePage.wishlistModal.isOpen()).toBe(true);
+  });
+
+  test('@smoke AUT_CRT_01: Open Cart modal with items', async ({
+    storePage,
+  }) => {
+    await storePage.inStockOnlyFilter.click();
+    await storePage.productCards
+      .first()
+      .locator('button.add-to-cart-btn')
+      .click();
+    await storePage.productCards
+      .nth(2)
+      .locator('button.add-to-cart-btn')
+      .click();
+    await storePage.cartButton.click();
+    await storePage.cartModal.waitForOpen();
+    await expect(await storePage.cartModal.getItemCount()).not.toBe(0);
+
+    const allItemDetails = await storePage.cartModal.getAllItemDetails();
+    let totalPrice = 0;
+    for (const itemDetails of allItemDetails) {
+      await expect(itemDetails.quantity).toEqual(1);
+
+      totalPrice += itemDetails.unitPrice;
+    }
+
+    await expect(await storePage.cartModal.getTotalPrice()).toEqual(totalPrice);
+  });
+
+  test('@smoke AUT_CRT_02: Increase item quantity [+] & verify math', async ({
+    storePage,
+  }) => {
+    await storePage.inStockOnlyFilter.click();
+    await storePage.productCards
+      .first()
+      .locator('button.add-to-cart-btn')
+      .click();
+    await storePage.cartButton.click();
+    await storePage.cartModal.waitForOpen();
+    await storePage.cartModal.itemCards
+      .first()
+      .locator('button[data-testid*="cart-increase-prod"]')
+      .click();
+
+    const allItemDetails = await storePage.cartModal.getAllItemDetails();
+    let totalPrice = 0;
+    for (const itemDetails of allItemDetails) {
+      totalPrice += itemDetails.unitPrice * itemDetails.quantity;
+    }
+
+    await expect(storePage.cartModal.modal).toContainText(
+      '2 item(s) in your cart',
+    );
+    await expect(await storePage.cartModal.getTotalPrice()).toEqual(totalPrice);
+  });
+
+  test('@smoke AUT_CRT_03: Decrease item quantity [-]', async ({
+    storePage,
+  }) => {
+    await storePage.inStockOnlyFilter.click();
+    await storePage.productCards
+      .first()
+      .locator('button.add-to-cart-btn')
+      .click();
+    await storePage.cartButton.click();
+    await storePage.cartModal.waitForOpen();
+    await storePage.cartModal.itemCards
+      .first()
+      .locator('button[data-testid*="cart-increase-prod"]')
+      .click();
+    await storePage.cartModal.itemCards
+      .first()
+      .locator('button[data-testid*="cart-decrease-prod"]')
+      .click();
+
+    const allItemDetails = await storePage.cartModal.getAllItemDetails();
+    let totalPrice = 0;
+    for (const itemDetails of allItemDetails) {
+      totalPrice += itemDetails.unitPrice * itemDetails.quantity;
+    }
+
+    await expect(storePage.cartModal.modal).toContainText(
+      '1 item(s) in your cart',
+    );
+    await expect(await storePage.cartModal.getTotalPrice()).toEqual(totalPrice);
+  });
+
+  test('AUT_CRT_04: Quantity lower bound check at Qty = 1', async ({
+    storePage,
+  }) => {
+    await storePage.inStockOnlyFilter.click();
+    await storePage.productCards
+      .first()
+      .locator('button.add-to-cart-btn')
+      .click();
+    await storePage.cartButton.click();
+    await storePage.cartModal.waitForOpen();
+    await storePage.cartModal.itemCards
+      .first()
+      .locator('button[data-testid*="cart-decrease-prod"]')
+      .click();
+
+    await expect(storePage.cartModal.modal).toContainText('Your cart is empty');
+    await expect(storePage.cartModal.itemCards).toHaveCount(0);
+  });
+
+  test('@smoke AUT_CRT_05: Remove item via red trash icon', async ({
+    storePage,
+  }) => {
+    await storePage.inStockOnlyFilter.click();
+    await storePage.productCards
+      .first()
+      .locator('button.add-to-cart-btn')
+      .click();
+    await storePage.cartButton.click();
+    await storePage.cartModal.waitForOpen();
+    await storePage.cartModal.itemCards
+      .first()
+      .locator('button[data-testid*="cart-remove-prod"]')
+      .click();
+
+    await expect(storePage.cartModal.modal).toContainText('Your cart is empty');
+    await expect(storePage.cartModal.itemCards).toHaveCount(0);
+  });
+
+  test('AUT_CRT_06: Multi-item total calculation and float precision', async ({
+    storePage,
+  }) => {
+    await storePage.inStockOnlyFilter.click();
+
+    await storePage.productCards
+      .first()
+      .locator('button.add-to-cart-btn')
+      .click();
+    await storePage.productCards
+      .nth(2)
+      .locator('button.add-to-cart-btn')
+      .click({ clickCount: 2 });
+    await storePage.cartButton.click();
+    await storePage.cartModal.waitForOpen();
+
+    const allItemDetails = await storePage.cartModal.getAllItemDetails();
+    let totalPrice = 0;
+    for (const itemDetails of allItemDetails) {
+      totalPrice += itemDetails.unitPrice * itemDetails.quantity;
+    }
+
+    await expect(await storePage.cartModal.getTotalPrice()).toEqual(totalPrice);
+  });
+
+  test('AUT_CRT_07: "Continue Shopping" button action', async ({
+    storePage,
+  }) => {
+    await storePage.inStockOnlyFilter.click();
+    await storePage.productCards
+      .first()
+      .locator('button.add-to-cart-btn')
+      .click();
+    await storePage.cartButton.click();
+    await storePage.cartModal.waitForOpen();
+    await storePage.cartModal.clickContinueShopping();
+
+    await expect(await storePage.cartModal.isOpen()).toBe(false);
+    await expect(
+      await storePage.cartButton.getAttribute('data-cart-count'),
+    ).toEqual('1');
+  });
+
+  test('@smoke AUT_CRT_08: "Checkout" button action', async ({ storePage }) => {
+    await storePage.inStockOnlyFilter.click();
+    await storePage.productCards
+      .first()
+      .locator('button.add-to-cart-btn')
+      .click();
+    await storePage.cartButton.click();
+    await storePage.cartModal.waitForOpen();
+    await storePage.cartModal.clickCheckout();
+
+    await expect(await storePage.toast.getMessageText()).toContain(
+      'Proceeding to checkout',
+    );
   });
 });
