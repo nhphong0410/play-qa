@@ -791,4 +791,29 @@ test.describe('Store Page', () => {
       'Proceeding to checkout',
     );
   });
+
+  test('AUT_SYN_01: Cross-component Wishlist sync', async ({ storePage }) => {
+    const productName = 'Premium Wireless Headphones';
+
+    await storePage.searchInput.fill(productName);
+    await storePage.toggleWishlistForProduct(productName);
+
+    expect(await storePage.getWishlistCount()).toEqual(1);
+
+    await storePage.toggleWishlistForProduct(productName);
+
+    expect(await storePage.getWishlistCount()).toEqual(0);
+
+    await storePage.toggleWishlistForProduct(productName);
+    await storePage.wishlistButton.click();
+    await storePage.wishlistModal.waitForOpen();
+    await storePage.wishlistModal.removeItem(productName);
+    await storePage.wishlistModal.closeViaXButton();
+    await storePage.wishlistModal.waitForClosed();
+
+    expect(await storePage.getWishlistCount()).toEqual(0);
+    expect(
+      await storePage.productCards.first().locator('button.wishlist-btn svg'),
+    ).not.toContainClass('text-red-500');
+  });
 });
