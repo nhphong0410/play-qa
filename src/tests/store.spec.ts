@@ -338,7 +338,7 @@ test.describe('Store Page', () => {
   test('@smoke AUT_CRD_01: Add In-Stock product to Cart from card', async ({
     storePage,
   }) => {
-    await storePage.inStockOnlyFilter.click();
+    await storePage.toggleInStockOnly();
 
     const productCard = storePage.productCards.first();
     const addToCartButton = productCard.getByRole('button', {
@@ -494,5 +494,124 @@ test.describe('Store Page', () => {
 
     await expect(pageOneButton).toContainClass('bg-primary');
     await expect(previousButton).toBeDisabled();
+  });
+
+  test('AUT_WSH_01: Open empty Wishlist modal', async ({ storePage }) => {
+    await storePage.wishlistButton.click();
+    await storePage.wishlistModal.waitForOpen();
+
+    await expect(await storePage.wishlistModal.isOpen()).toBe(true);
+    await expect(await storePage.wishlistModal.getItemCount()).toBe(0);
+    await expect(await storePage.wishlistModal.modal).toContainText(
+      'Your wishlist is empty',
+    );
+  });
+
+  test('@smoke AUT_WSH_02: Open populated Wishlist modal', async ({
+    storePage,
+  }) => {
+    await storePage.productCards.first().locator('button.wishlist-btn').click();
+    await storePage.productCards.nth(2).locator('button.wishlist-btn').click();
+    await storePage.wishlistButton.click();
+    await storePage.wishlistModal.waitForOpen();
+
+    await expect(storePage.wishlistModal.subtitle).toContainText(
+      '2 item(s) in your wishlist',
+    );
+    await expect(await storePage.wishlistModal.getItemCount()).toBe(2);
+  });
+
+  test('@smoke AUT_WSH_03: Remove single item inside Wishlist modal', async ({
+    storePage,
+  }) => {
+    await storePage.productCards.first().locator('button.wishlist-btn').click();
+    await storePage.productCards.nth(2).locator('button.wishlist-btn').click();
+    await storePage.wishlistButton.click();
+    await storePage.wishlistModal.waitForOpen();
+
+    await expect(await storePage.wishlistModal.getItemCount()).toBe(2);
+
+    await storePage.wishlistModal.itemCards
+      .first()
+      .locator('button[data-testid*="wishlist-remove"]')
+      .click();
+
+    await expect(await storePage.wishlistModal.getItemCount()).toBe(1);
+  });
+
+  test('@smoke AUT_WSH_04: Add to Cart directly from Wishlist modal', async ({
+    storePage,
+  }) => {
+    await storePage.toggleInStockOnly();
+    await storePage.productCards.first().locator('button.wishlist-btn').click();
+    await storePage.wishlistButton.click();
+    await storePage.wishlistModal.waitForOpen();
+
+    await storePage.wishlistModal.itemCards
+      .first()
+      .locator(
+        'button[data-testid^="wishlist-add-cart-"], button:has-text("Add to Cart")',
+      )
+      .click();
+
+    await expect(await storePage.getCartCount()).toBe(1);
+  });
+
+  test('AUT_WSH_05: Out of stock handling in Wishlist modal', async ({
+    storePage,
+  }) => {
+    let shouldContinue = true;
+    do {
+      const productCards = await storePage.productCards.all();
+
+      for (const productCard of productCards) {
+        const isOutOfStock = await productCard.getAttribute('data-in-stock');
+
+        if (isOutOfStock && isOutOfStock == 'false') {
+          await productCard.locator('button.wishlist-btn').click();
+          shouldContinue = false;
+          break;
+        }
+      }
+
+      if (!shouldContinue || !(await storePage.hasNextpage())) {
+        shouldContinue = false;
+        break;
+      }
+
+      await storePage.clickNextPage();
+    } while (shouldContinue);
+
+    await storePage.wishlistButton.click();
+
+    const itemCard = await storePage.wishlistModal.itemCards.first();
+    const itemCardAddButton = await itemCard.locator(
+      'button[data-testid^="wishlist-add-cart-"], button:has-text("Add to Cart")',
+    );
+
+    await expect(itemCard).toContainText('Out of Stock');
+    await expect(itemCardAddButton).toBeDisabled();
+  });
+
+  test('AUT_WSH_06: Close Wishlist modal', async ({ storePage }) => {
+    await storePage.wishlistButton.click();
+
+    await expect(await storePage.wishlistModal.isOpen()).toBe(true);
+
+    await storePage.wishlistModal.closeViaXButton();
+
+    await expect(await storePage.wishlistModal.isOpen()).toBe(false);
+
+    await storePage.wishlistButton.click();
+
+    await expect(await storePage.wishlistModal.isOpen()).toBe(true);
+
+    await storePage.wishlistModal.closeViaBottomButton();
+
+    await expect(await storePage.wishlistModal.isOpen()).toBe(false);
+
+    await storePage.wishlistButton.click();
+
+    await expect(await storePage.wishlistModal.isOpen()).toBe(true);
   });
 });
