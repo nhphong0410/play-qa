@@ -40,7 +40,7 @@ test.describe('Store Page', () => {
     await storePage.searchInput.press('Enter');
 
     const productCount = await storePage.productCards.count();
-    expect(productCount).toBeGreaterThan(0);
+    await expect(productCount).toBeGreaterThan(0);
 
     for (const productCard of await storePage.productCards.all()) {
       let isMatchtitle = false;
@@ -61,7 +61,7 @@ test.describe('Store Page', () => {
         isMatchCategory = true;
       }
 
-      expect(isMatchtitle || isMatchTags || isMatchCategory).toBe(true);
+      await expect(isMatchtitle || isMatchTags || isMatchCategory).toBe(true);
     }
   });
 
@@ -74,7 +74,7 @@ test.describe('Store Page', () => {
       .click();
 
     const selectedOption = await storePage.sortDropdown.textContent();
-    expect(selectedOption?.trim()).toBe('Price: Low to High');
+    await expect(selectedOption?.trim()).toBe('Price: Low to High');
 
     const prices = [];
     for (const productCard of await storePage.productCards.all()) {
@@ -83,13 +83,13 @@ test.describe('Store Page', () => {
         .textContent();
       const price = Number(priceText?.replace(/[^0-9.]/g, ''));
 
-      expect(Number.isNaN(price)).toBe(false);
+      await expect(Number.isNaN(price)).toBe(false);
       prices.push(price);
     }
 
-    expect(storePage.sortDropdown).toHaveText('Price: Low to High');
-    expect(prices.length).toBeGreaterThan(0);
-    expect(prices).toEqual([...prices].sort((a, b) => a - b));
+    await expect(storePage.sortDropdown).toHaveText('Price: Low to High');
+    await expect(prices.length).toBeGreaterThan(0);
+    await expect(prices).toEqual([...prices].sort((a, b) => a - b));
   });
 
   test('@smoke AUT_SRT_02: Sort by price high to low', async ({
@@ -109,12 +109,12 @@ test.describe('Store Page', () => {
         .textContent();
       const price = Number(priceText?.replace(/[^0-9.]/g, ''));
 
-      expect(Number.isNaN(price)).toBe(false);
+      await expect(Number.isNaN(price)).toBe(false);
       prices.push(price);
     }
 
-    expect(prices.length).toBeGreaterThan(0);
-    expect(prices).toEqual([...prices].sort((a, b) => b - a));
+    await expect(prices.length).toBeGreaterThan(0);
+    await expect(prices).toEqual([...prices].sort((a, b) => b - a));
   });
 
   test('@smoke AUT_SRT_03: Sort by highest rated', async ({ storePage }) => {
@@ -132,12 +132,12 @@ test.describe('Store Page', () => {
         .getAttribute('data-rating');
       const rating = Number(ratingText);
 
-      expect(Number.isNaN(rating)).toBe(false);
+      await expect(Number.isNaN(rating)).toBe(false);
       ratings.push(rating);
     }
 
-    expect(ratings.length).toBeGreaterThan(0);
-    expect(ratings).toEqual([...ratings].sort((a, b) => b - a));
+    await expect(ratings.length).toBeGreaterThan(0);
+    await expect(ratings).toEqual([...ratings].sort((a, b) => b - a));
   });
 
   test('@smoke AUT_SRT_04: Sort by most popular', async ({ storePage }) => {
@@ -155,12 +155,12 @@ test.describe('Store Page', () => {
         .getAttribute('data-reviews-count');
       const reviewCount = Number(reviewCountText);
 
-      expect(Number.isNaN(reviewCount)).toBe(false);
+      await expect(Number.isNaN(reviewCount)).toBe(false);
       reviewCounts.push(reviewCount);
     }
 
-    expect(reviewCounts.length).toBeGreaterThan(0);
-    expect(reviewCounts).toEqual([...reviewCounts].sort((a, b) => b - a));
+    await expect(reviewCounts.length).toBeGreaterThan(0);
+    await expect(reviewCounts).toEqual([...reviewCounts].sort((a, b) => b - a));
   });
 
   test('@smoke AUT_FLT_01: Filter by single category', async ({
@@ -180,7 +180,9 @@ test.describe('Store Page', () => {
 
       for (const productCard of productCards) {
         const productCategory = await productCard.getAttribute('data-category');
-        expect(productCategory?.toLowerCase()).toBe(category.toLowerCase());
+        await expect(productCategory?.toLowerCase()).toBe(
+          category.toLowerCase(),
+        );
       }
 
       if (!(await storePage.hasNextpage())) {
@@ -204,13 +206,13 @@ test.describe('Store Page', () => {
     let shouldContinue = true;
     do {
       const productCards = await storePage.productCards.all();
-      expect(productCards.length).toBeGreaterThan(0);
+      await expect(productCards.length).toBeGreaterThan(0);
 
       for (const productCard of productCards) {
         const productCategory = await productCard.getAttribute('data-category');
-        expect(categories.map((category) => category.toLowerCase())).toContain(
-          productCategory?.toLowerCase(),
-        );
+        await expect(
+          categories.map((category) => category.toLowerCase()),
+        ).toContain(productCategory?.toLowerCase());
       }
 
       if (!(await storePage.hasNextpage())) {
@@ -230,7 +232,7 @@ test.describe('Store Page', () => {
     let shouldContinue = true;
     do {
       const productCards = await storePage.productCards.all();
-      expect(productCards.length).toBeGreaterThan(0);
+      await expect(productCards.length).toBeGreaterThan(0);
 
       for (const productCard of productCards) {
         await expect(
@@ -255,14 +257,14 @@ test.describe('Store Page', () => {
     let shouldContinue = true;
     do {
       const productCards = await storePage.productCards.all();
-      expect(productCards.length).toBeGreaterThan(0);
+      await expect(productCards.length).toBeGreaterThan(0);
 
       for (const productCard of productCards) {
         const price = parseFloat(
           (await productCard.getAttribute('data-price')) || '0',
         );
 
-        expect(price).toBeGreaterThanOrEqual(100);
+        await expect(price).toBeGreaterThanOrEqual(100);
       }
 
       if (!(await storePage.hasNextpage())) {
@@ -284,7 +286,7 @@ test.describe('Store Page', () => {
     let shouldContinue = true;
     do {
       const productCards = await storePage.productCards.all();
-      expect(productCards.length).toBeGreaterThan(0);
+      await expect(productCards.length).toBeGreaterThan(0);
 
       for (const productCard of productCards) {
         const rating = parseFloat(
@@ -293,7 +295,7 @@ test.describe('Store Page', () => {
             .getAttribute('data-rating')) || '0',
         );
 
-        expect(rating).toBeGreaterThanOrEqual(4);
+        await expect(rating).toBeGreaterThanOrEqual(4);
       }
 
       if (!(await storePage.hasNextpage())) {
@@ -318,10 +320,10 @@ test.describe('Store Page', () => {
     await storePage.setSliderValueViaKeyboard(targetPrice);
 
     const productCards = await storePage.productCards.all();
-    expect(productCards.length).toBeGreaterThan(0);
+    await expect(productCards.length).toBeGreaterThan(0);
 
     for (const productCard of productCards) {
-      expect(
+      await expect(
         (await productCard.getAttribute('data-category'))?.toLowerCase(),
       ).toBe(targetCategory.toLocaleLowerCase());
       await expect(
@@ -331,7 +333,7 @@ test.describe('Store Page', () => {
       const price = parseFloat(
         (await productCard.getAttribute('data-price')) || '0',
       );
-      expect(price).toBeGreaterThanOrEqual(targetPrice);
+      await expect(price).toBeGreaterThanOrEqual(targetPrice);
     }
   });
 
@@ -417,7 +419,7 @@ test.describe('Store Page', () => {
 
   test('AUT_CRD_05: Product metadata display', async ({ storePage }) => {
     const productCards = await storePage.productCards.all();
-    expect(productCards.length).toBeGreaterThan(0);
+    await expect(productCards.length).toBeGreaterThan(0);
 
     for (const productCard of productCards) {
       await expect(productCard.locator('img')).toBeVisible();
@@ -798,11 +800,11 @@ test.describe('Store Page', () => {
     await storePage.searchInput.fill(productName);
     await storePage.toggleWishlistForProduct(productName);
 
-    expect(await storePage.getWishlistCount()).toEqual(1);
+    await expect(await storePage.getWishlistCount()).toEqual(1);
 
     await storePage.toggleWishlistForProduct(productName);
 
-    expect(await storePage.getWishlistCount()).toEqual(0);
+    await expect(await storePage.getWishlistCount()).toEqual(0);
 
     await storePage.toggleWishlistForProduct(productName);
     await storePage.wishlistButton.click();
@@ -811,8 +813,8 @@ test.describe('Store Page', () => {
     await storePage.wishlistModal.closeViaXButton();
     await storePage.wishlistModal.waitForClosed();
 
-    expect(await storePage.getWishlistCount()).toEqual(0);
-    expect(
+    await expect(await storePage.getWishlistCount()).toEqual(0);
+    await expect(
       await storePage.productCards.first().locator('button.wishlist-btn svg'),
     ).not.toContainClass('text-red-500');
   });
